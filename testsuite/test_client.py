@@ -36,15 +36,16 @@ def wait_for_url(url):
 @pytest.yield_fixture
 def server(tmp):
     port = '36356'
-    url = 'http://localhost:' + port
+    app_url = 'http://localhost:' + port
+    git_url = app_url + '/repo.git'
 
-    run(tmp, 'git', 'init', '--bare', 'server.git')
+    run(tmp, 'git', 'init', '--bare', 'repo.git')
 
-    repo = tmp / 'server.git'
+    repo = tmp / 'repo.git'
     with (tmp / 'settings.py').open('w') as settings_py:
-        print("GIT_PROJECT_ROOT =", repr(str(repo)), file=settings_py)
+        print("GIT_PROJECT_ROOT =", repr(str(tmp)), file=settings_py)
         print("PYLFS_ROOT =", repr(str(repo / 'pylfs')), file=settings_py)
-        print("SERVER_URL =", repr(url), file=settings_py)
+        print("SERVER_URL =", repr(app_url), file=settings_py)
 
     p = subprocess.Popen(
         ['python', 'lfs.py', str(tmp / 'settings.py')],
@@ -52,10 +53,10 @@ def server(tmp):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
-    wait_for_url(url + '/info/refs')
+    wait_for_url(git_url + '/info/refs')
 
     try:
-        yield url + '/'
+        yield git_url
 
     finally:
         p.terminate()
@@ -76,7 +77,7 @@ def test_push_and_clone(tmp, server):
     with hardwrk_jpg.open('rb') as f:
         orig = f.read()
 
-    ob = tmp / 'server.git' / 'pylfs' / 'objects' / oid[:2] / oid[2:4] / oid
+    ob = tmp / 'repo.git' / 'pylfs' / 'objects' / oid[:2] / oid[2:4] / oid
     with ob.open('rb') as saved:
         assert saved.read() == orig
 
