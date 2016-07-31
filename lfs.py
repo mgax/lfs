@@ -41,6 +41,14 @@ def create_app():
 def main():
     port = int(os.environ.get('PORT') or 5000)
     app = create_app()
-    waitress.serve(app.wsgi_app, host='localhost', port=port)
+
+    def serve():
+        waitress.serve(app.wsgi_app, host='localhost', port=port)
+
+    if app.config.get('RELOADER'):
+        from werkzeug._reloader import run_with_reloader
+        run_with_reloader(serve)
+    else:
+        serve()
 
 main()
