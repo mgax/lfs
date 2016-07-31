@@ -4,6 +4,7 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
+argh==0.26.2              # via watchdog
 click==6.6                # via flask, pip-tools
 first==2.0.1              # via pip-tools
 Flask==0.11.1
@@ -11,8 +12,11 @@ itsdangerous==0.24        # via flask
 Jinja2==2.8               # via flask
 MarkupSafe==0.23          # via jinja2
 paste==2.0.3
+pathtools==0.1.2          # via watchdog
 pip-tools==1.7.0
 py==1.4.31                # via pytest
 pytest==2.9.2
+PyYAML==3.11              # via watchdog
 six==1.10.0               # via paste, pip-tools
+watchdog==0.8.3
 Werkzeug==0.11.10         # via flask

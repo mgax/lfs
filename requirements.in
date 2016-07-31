@@ -2,3 +2,4 @@ pip-tools
 Flask
 pytest
 paste
+watchdog
