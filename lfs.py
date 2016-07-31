@@ -1,10 +1,37 @@
 import os
 from pathlib import Path
+from contextlib import contextmanager
+from tempfile import NamedTemporaryFile
 import waitress
 import flask
-from werkzeug.wsgi import responder
+from werkzeug.wsgi import responder, FileWrapper
 from werkzeug.wrappers import Request
 from paste.cgiapp import CGIApplication
+
+class LFS:
+
+    def __init__(self, root):
+        self.root = Path(root)
+        self.tmp = self.root / 'tmp'
+        self.objects = self.root / 'objects'
+
+        self.root.mkdir(exist_ok=True)
+        self.tmp.mkdir(exist_ok=True)
+        self.objects.mkdir(exist_ok=True)
+
+    @contextmanager
+    def save(self, oid):
+        d1 = self.objects / oid[:2]
+        d2 = d1 / oid[2:4]
+        obj = d2 / oid
+
+        d1.mkdir(exist_ok=True)
+        d2.mkdir(exist_ok=True)
+
+        with NamedTemporaryFile(dir=str(self.tmp), delete=False) as tmp:
+            yield tmp
+
+        Path(tmp.name).rename(obj)
 
 def create_git_app(repo):
     git_http_backend = Path(__file__).parent.absolute() / 'git-http-backend'
@@ -23,6 +50,7 @@ def create_app():
     app = flask.Flask(__name__)
     app.config.from_pyfile('settings.py')
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
+    lfs = LFS(app.config['PYLFS_ROOT'])
 
     @responder
     def dispatch(environ, start_response):
@@ -36,6 +64,28 @@ def create_app():
 
     flask_wsgi_app = app.wsgi_app
     app.wsgi_app = dispatch
+
+    @app.route('/.git/info/lfs/objects', methods=['POST'])
+    def lfs_objects():
+        oid = flask.request.json['oid']
+        resp = flask.jsonify({
+            '_links': {
+                'upload': {
+                    'href': app.config['SERVER_URL'] + '/upload/' + oid,
+                },
+            },
+        })
+        resp.status_code = 202
+        return resp
+
+    @app.route('/upload/<oid>', methods=['PUT'])
+    def upload(oid):
+        with lfs.save(oid) as f:
+            for chunk in FileWrapper(flask.request.stream):
+                f.write(chunk)
+
+        return flask.jsonify(ok=True)
+
     return app
 
 def main():
