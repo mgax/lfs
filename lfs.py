@@ -22,17 +22,18 @@ class LFS:
 
     @contextmanager
     def save(self, oid):
-        d1 = self.objects / oid[:2]
-        d2 = d1 / oid[2:4]
-        obj = d2 / oid
-
-        d1.mkdir(exist_ok=True)
-        d2.mkdir(exist_ok=True)
+        obj = self.path(oid)
+        obj.parent.parent.mkdir(exist_ok=True)
+        obj.parent.mkdir(exist_ok=True)
 
         with NamedTemporaryFile(dir=str(self.tmp), delete=False) as tmp:
             yield tmp
 
         Path(tmp.name).rename(obj)
+
+    def path(self, oid):
+        assert '/' not in oid
+        return self.objects / oid[:2] / oid[2:4] / oid
 
 def create_git_app(repo):
     git_http_backend = Path(__file__).parent.absolute() / 'git-http-backend'
@@ -57,7 +58,12 @@ def create_app(config_file):
     def dispatch(environ, start_response):
         request = Request(environ, shallow=True)
 
-        if request.path in ['/info/refs', '/git-receive-pack']:
+        git_backend_urls = [
+            '/info/refs',
+            '/git-receive-pack',
+            '/git-upload-pack',
+        ]
+        if request.path in git_backend_urls:
             environ['wsgi.errors'] = environ['wsgi.errors'].buffer.raw
             return git_app
 
@@ -79,6 +85,25 @@ def create_app(config_file):
         resp.status_code = 202
         return resp
 
+    @app.route('/.git/info/lfs/objects/batch', methods=['POST'])
+    def batch():
+        flask.abort(404)
+
+    @app.route('/.git/info/lfs/objects/<oid>')
+    def lfs_get_oid(oid):
+        oid_path = lfs.path(oid)
+        if not oid_path.is_file():
+            flask.abort(404)
+        return flask.jsonify({
+            'oid': oid,
+            'size': oid_path.stat().st_size,
+            '_links': {
+                'download': {
+                    'href': app.config['SERVER_URL'] + '/download/' + oid,
+                },
+            },
+        })
+
     @app.route('/upload/<oid>', methods=['PUT'])
     def upload(oid):
         with lfs.save(oid) as f:
@@ -86,6 +111,13 @@ def create_app(config_file):
                 f.write(chunk)
 
         return flask.jsonify(ok=True)
+
+    @app.route('/download/<oid>')
+    def download(oid):
+        oid_path = lfs.path(oid)
+        if not oid_path.is_file():
+            flask.abort(404)
+        return flask.helpers.send_file(str(oid_path))
 
     return app
 

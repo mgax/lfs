@@ -63,7 +63,7 @@ def server(tmp):
         assert not out, out.decode('utf-8')
         p.wait()
 
-def test_push(tmp, server):
+def test_push_and_clone(tmp, server):
     run(tmp, 'git', 'init', 'client')
     client = tmp / 'client'
     run(client, 'git', 'lfs', 'track', '*.jpg')
@@ -73,6 +73,14 @@ def test_push(tmp, server):
     run(client, 'git', 'remote', 'add', 'origin', server)
     run(client, 'git', 'push', 'origin', 'master')
 
+    with hardwrk_jpg.open('rb') as f:
+        orig = f.read()
+
     ob = tmp / 'server.git' / 'pylfs' / 'objects' / oid[:2] / oid[2:4] / oid
-    with hardwrk_jpg.open('rb') as orig, ob.open('rb') as saved:
-        assert orig.read() == saved.read()
+    with ob.open('rb') as saved:
+        assert saved.read() == orig
+
+    run(tmp, 'git', 'clone', server, 'theclone')
+
+    with (tmp / 'theclone' / 'hardwrk.jpg').open('rb') as cloned:
+        assert cloned.read() == orig
