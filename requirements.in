@@ -3,3 +3,4 @@ Flask
 pytest
 paste
 watchdog
+waitress
