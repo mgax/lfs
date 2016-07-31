@@ -44,7 +44,6 @@ def server(tmp):
     repo = tmp / 'repo.git'
     with (tmp / 'settings.py').open('w') as settings_py:
         print("GIT_PROJECT_ROOT =", repr(str(tmp)), file=settings_py)
-        print("PYLFS_ROOT =", repr(str(repo / 'pylfs')), file=settings_py)
         print("SERVER_URL =", repr(app_url), file=settings_py)
 
     p = subprocess.Popen(

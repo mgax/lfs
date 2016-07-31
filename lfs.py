@@ -55,7 +55,9 @@ def create_app(config_file):
     app = flask.Flask(__name__)
     app.config.from_pyfile(config_file)
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
-    lfs = LFS(Path(app.config['PYLFS_ROOT']))
+
+    def lfs(repo):
+        return LFS(Path(app.config['GIT_PROJECT_ROOT']) / repo / 'pylfs')
 
     @responder
     def dispatch(environ, start_response):
@@ -75,8 +77,8 @@ def create_app(config_file):
     flask_wsgi_app = app.wsgi_app
     app.wsgi_app = dispatch
 
-    def data_url(oid):
-        return app.config['SERVER_URL'] + '/lfs/' + oid
+    def data_url(repo, oid):
+        return app.config['SERVER_URL'] + '/' + repo + '/lfs/' + oid
 
     @app.route('/<repo>/info/lfs/objects', methods=['POST'])
     def lfs_objects(repo):
@@ -84,7 +86,7 @@ def create_app(config_file):
         resp = flask.jsonify({
             '_links': {
                 'upload': {
-                    'href': data_url(oid),
+                    'href': data_url(repo, oid),
                 },
             },
         })
@@ -97,7 +99,7 @@ def create_app(config_file):
 
     @app.route('/<repo>/info/lfs/objects/<oid>')
     def lfs_get_oid(repo, oid):
-        oid_path = lfs.path(oid)
+        oid_path = lfs(repo).path(oid)
         if not oid_path.is_file():
             flask.abort(404)
         return flask.jsonify({
@@ -105,22 +107,22 @@ def create_app(config_file):
             'size': oid_path.stat().st_size,
             '_links': {
                 'download': {
-                    'href': data_url(oid),
+                    'href': data_url(repo, oid),
                 },
             },
         })
 
-    @app.route('/lfs/<oid>', methods=['PUT'])
-    def upload(oid):
-        with lfs.save(oid) as f:
+    @app.route('/<repo>/lfs/<oid>', methods=['PUT'])
+    def upload(repo, oid):
+        with lfs(repo).save(oid) as f:
             for chunk in FileWrapper(flask.request.stream):
                 f.write(chunk)
 
         return flask.jsonify(ok=True)
 
-    @app.route('/lfs/<oid>')
-    def download(oid):
-        oid_path = lfs.path(oid)
+    @app.route('/<repo>/lfs/<oid>')
+    def download(repo, oid):
+        oid_path = lfs(repo).path(oid)
         if not oid_path.is_file():
             flask.abort(404)
         return flask.helpers.send_file(str(oid_path))
