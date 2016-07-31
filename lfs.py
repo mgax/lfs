@@ -10,6 +10,12 @@ from werkzeug.wsgi import responder, FileWrapper
 from werkzeug.wrappers import Request
 from paste.cgiapp import CGIApplication
 
+def mkdir(p):
+    try:
+        p.mkdir()
+    except FileExistsError:
+        pass
+
 class LFS:
 
     def __init__(self, root):
@@ -17,17 +23,17 @@ class LFS:
 
     @contextmanager
     def save(self, oid):
-        self.root.mkdir(exist_ok=True)
+        mkdir(self.root)
 
         tmpdir = self.root / 'tmp'
-        tmpdir.mkdir(exist_ok=True)
+        mkdir(tmpdir)
 
         objects = self.root / 'objects'
-        objects.mkdir(exist_ok=True)
+        mkdir(objects)
 
         obj = self.path(oid)
-        obj.parent.parent.mkdir(exist_ok=True)
-        obj.parent.mkdir(exist_ok=True)
+        mkdir(obj.parent.parent)
+        mkdir(obj.parent)
 
         with NamedTemporaryFile(dir=str(tmpdir), delete=False) as tmp:
             yield tmp
