@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 from pathlib import Path
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
@@ -59,11 +60,11 @@ def create_app(config_file):
         request = Request(environ, shallow=True)
 
         git_backend_urls = [
-            '/repo.git/info/refs',
-            '/repo.git/git-receive-pack',
-            '/repo.git/git-upload-pack',
+            r'^/[^/]+/info/refs$',
+            r'^/[^/]+/git-receive-pack$',
+            r'^/[^/]+/git-upload-pack$',
         ]
-        if request.path in git_backend_urls:
+        if any(re.match(p, request.path) for p in git_backend_urls):
             environ['wsgi.errors'] = environ['wsgi.errors'].buffer.raw
             return git_app
 
@@ -72,8 +73,8 @@ def create_app(config_file):
     flask_wsgi_app = app.wsgi_app
     app.wsgi_app = dispatch
 
-    @app.route('/repo.git/info/lfs/objects', methods=['POST'])
-    def lfs_objects():
+    @app.route('/<repo>/info/lfs/objects', methods=['POST'])
+    def lfs_objects(repo):
         oid = flask.request.json['oid']
         resp = flask.jsonify({
             '_links': {
@@ -85,12 +86,12 @@ def create_app(config_file):
         resp.status_code = 202
         return resp
 
-    @app.route('/repo.git/info/lfs/objects/batch', methods=['POST'])
-    def batch():
+    @app.route('/<repo>/info/lfs/objects/batch', methods=['POST'])
+    def batch(repo):
         flask.abort(404)
 
-    @app.route('/repo.git/info/lfs/objects/<oid>')
-    def lfs_get_oid(oid):
+    @app.route('/<repo>/info/lfs/objects/<oid>')
+    def lfs_get_oid(repo, oid):
         oid_path = lfs.path(oid)
         if not oid_path.is_file():
             flask.abort(404)
