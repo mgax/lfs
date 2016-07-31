@@ -75,13 +75,16 @@ def create_app(config_file):
     flask_wsgi_app = app.wsgi_app
     app.wsgi_app = dispatch
 
+    def data_url(oid):
+        return app.config['SERVER_URL'] + '/lfs/' + oid
+
     @app.route('/<repo>/info/lfs/objects', methods=['POST'])
     def lfs_objects(repo):
         oid = flask.request.json['oid']
         resp = flask.jsonify({
             '_links': {
                 'upload': {
-                    'href': app.config['SERVER_URL'] + '/upload/' + oid,
+                    'href': data_url(oid),
                 },
             },
         })
@@ -102,12 +105,12 @@ def create_app(config_file):
             'size': oid_path.stat().st_size,
             '_links': {
                 'download': {
-                    'href': app.config['SERVER_URL'] + '/download/' + oid,
+                    'href': data_url(oid),
                 },
             },
         })
 
-    @app.route('/upload/<oid>', methods=['PUT'])
+    @app.route('/lfs/<oid>', methods=['PUT'])
     def upload(oid):
         with lfs.save(oid) as f:
             for chunk in FileWrapper(flask.request.stream):
@@ -115,7 +118,7 @@ def create_app(config_file):
 
         return flask.jsonify(ok=True)
 
-    @app.route('/download/<oid>')
+    @app.route('/lfs/<oid>')
     def download(oid):
         oid_path = lfs.path(oid)
         if not oid_path.is_file():
