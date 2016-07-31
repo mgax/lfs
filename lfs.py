@@ -1,3 +1,4 @@
+import sys
 import os
 from pathlib import Path
 from contextlib import contextmanager
@@ -46,9 +47,9 @@ def create_git_app(repo):
 
     return git_app
 
-def create_app():
+def create_app(config_file):
     app = flask.Flask(__name__)
-    app.config.from_pyfile('settings.py')
+    app.config.from_pyfile(config_file)
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
     lfs = LFS(app.config['PYLFS_ROOT'])
 
@@ -89,8 +90,13 @@ def create_app():
     return app
 
 def main():
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = 'settings.py'
+
     port = int(os.environ.get('PORT') or 5000)
-    app = create_app()
+    app = create_app(config_file)
 
     def serve():
         waitress.serve(app.wsgi_app, host='localhost', port=port)
