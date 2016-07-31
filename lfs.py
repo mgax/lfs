@@ -13,28 +13,30 @@ from paste.cgiapp import CGIApplication
 class LFS:
 
     def __init__(self, root):
-        self.root = Path(root)
-        self.tmp = self.root / 'tmp'
-        self.objects = self.root / 'objects'
-
-        self.root.mkdir(exist_ok=True)
-        self.tmp.mkdir(exist_ok=True)
-        self.objects.mkdir(exist_ok=True)
+        self.root = root
 
     @contextmanager
     def save(self, oid):
+        self.root.mkdir(exist_ok=True)
+
+        tmpdir = self.root / 'tmp'
+        tmpdir.mkdir(exist_ok=True)
+
+        objects = self.root / 'objects'
+        objects.mkdir(exist_ok=True)
+
         obj = self.path(oid)
         obj.parent.parent.mkdir(exist_ok=True)
         obj.parent.mkdir(exist_ok=True)
 
-        with NamedTemporaryFile(dir=str(self.tmp), delete=False) as tmp:
+        with NamedTemporaryFile(dir=str(tmpdir), delete=False) as tmp:
             yield tmp
 
         Path(tmp.name).rename(obj)
 
     def path(self, oid):
         assert '/' not in oid
-        return self.objects / oid[:2] / oid[2:4] / oid
+        return self.root / 'objects' / oid[:2] / oid[2:4] / oid
 
 def create_git_app(repo):
     git_http_backend = Path(__file__).parent.absolute() / 'git-http-backend'
@@ -53,7 +55,7 @@ def create_app(config_file):
     app = flask.Flask(__name__)
     app.config.from_pyfile(config_file)
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
-    lfs = LFS(app.config['PYLFS_ROOT'])
+    lfs = LFS(Path(app.config['PYLFS_ROOT']))
 
     @responder
     def dispatch(environ, start_response):
