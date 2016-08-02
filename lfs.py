@@ -63,7 +63,7 @@ def create_app(config_file):
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
 
     def lfs(repo):
-        return LFS(Path(app.config['GIT_PROJECT_ROOT']) / repo / 'pylfs')
+        return LFS(Path(app.config['GIT_PROJECT_ROOT']) / repo / 'lfs')
 
     @responder
     def dispatch(environ, start_response):

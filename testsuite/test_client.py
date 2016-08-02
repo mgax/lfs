@@ -76,7 +76,7 @@ def test_push_and_clone(tmp, server):
     with hardwrk_jpg.open('rb') as f:
         orig = f.read()
 
-    ob = tmp / 'repo.git' / 'pylfs' / 'objects' / oid[:2] / oid[2:4] / oid
+    ob = tmp / 'repo.git' / 'lfs' / 'objects' / oid[:2] / oid[2:4] / oid
     with ob.open('rb') as saved:
         assert saved.read() == orig
 
