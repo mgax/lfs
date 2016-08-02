@@ -10,8 +10,23 @@ import pytest
 hardwrk_jpg = Path(__file__).parent.absolute() / 'hardwrk.jpg'
 oid = '0b4d4d1d01a07527855848f6764d2de7d7f0c0631d22eebe2eabbb1c1b8b10d9'
 
-def run(cwd, *args):
-    return subprocess.check_output(args, cwd=str(cwd))
+@pytest.fixture
+def run(tmp):
+    env = dict(
+        os.environ,
+        GIT_CONFIG_NOSYSTEM='on',
+        HOME=str(tmp),
+    )
+
+    def run(cwd, *args):
+        return subprocess.check_output(args, cwd=str(cwd), env=env)
+
+    run(tmp, 'git', 'config', '--global', 'user.email', 'foo@example.fom')
+    run(tmp, 'git', 'config', '--global', 'user.name', 'Foo')
+    run(tmp, 'git', 'config', '--global', 'credential.helper', '')
+    run(tmp, 'git', 'lfs', 'install')
+
+    return run
 
 def cp(a, b):
     shutil.copy(str(a), str(b))
@@ -34,10 +49,10 @@ def wait_for_url(url):
                 raise
 
 @pytest.yield_fixture
-def server(tmp):
+def server(tmp, run):
     port = '36356'
     app_url = 'http://localhost:' + port
-    git_url = app_url + '/repo.git'
+    git_url = 'http://foo:bar@localhost:' + port + '/repo.git'
 
     run(tmp, 'git', 'init', '--bare', 'repo.git')
 
@@ -63,7 +78,7 @@ def server(tmp):
         assert not out, out.decode('utf-8')
         p.wait()
 
-def test_push_and_clone(tmp, server):
+def test_push_and_clone(tmp, run, server):
     run(tmp, 'git', 'init', 'client')
     client = tmp / 'client'
     run(client, 'git', 'lfs', 'track', '*.jpg')
