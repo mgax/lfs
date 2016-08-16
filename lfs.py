@@ -142,7 +142,9 @@ def runserver(host, port, **kwargs):
     app = create_app(**kwargs)
 
     def serve():
-        waitress.serve(app.wsgi_app, host=host, port=port)
+        from paste.translogger import TransLogger
+        wsgi = TransLogger(app.wsgi_app)
+        waitress.serve(wsgi, host=host, port=port)
 
     if app.config.get('RELOADER'):
         from werkzeug._reloader import run_with_reloader
