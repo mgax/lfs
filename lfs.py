@@ -57,9 +57,12 @@ def create_git_app(repo):
 
     return git_app
 
-def create_app(config_file):
+def create_app(config_pyfile=None, config=None):
     app = flask.Flask(__name__)
-    app.config.from_pyfile(config_file)
+    if config_pyfile:
+        app.config.from_pyfile(config_pyfile)
+    if config:
+        app.config.update(config)
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
 
     def lfs(repo):
@@ -135,17 +138,11 @@ def create_app(config_file):
 
     return app
 
-def main():
-    if len(sys.argv) > 1:
-        config_file = sys.argv[1]
-    else:
-        config_file = 'settings.py'
-
-    port = int(os.environ.get('PORT') or 5000)
-    app = create_app(config_file)
+def runserver(host, port, **kwargs):
+    app = create_app(**kwargs)
 
     def serve():
-        waitress.serve(app.wsgi_app, host='localhost', port=port)
+        waitress.serve(app.wsgi_app, host=host, port=port)
 
     if app.config.get('RELOADER'):
         from werkzeug._reloader import run_with_reloader
@@ -153,4 +150,11 @@ def main():
     else:
         serve()
 
-main()
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        config_pyfile = sys.argv[1]
+    else:
+        config_pyfile = 'settings.py'
+
+    port = int(os.environ.get('PORT') or 5000)
+    runserver('localhost', port, config_pyfile=config_pyfile)
