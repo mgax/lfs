@@ -65,7 +65,7 @@ def create_app(config_pyfile=None, config=None):
         app.config.update(config)
     git_app = create_git_app(app.config['GIT_PROJECT_ROOT'])
 
-    def lfs(repo):
+    def open_lfs(repo):
         return LFS(Path(app.config['GIT_PROJECT_ROOT']) / repo / 'lfs')
 
     @responder
@@ -104,7 +104,7 @@ def create_app(config_pyfile=None, config=None):
 
     @app.route('/<repo>/info/lfs/objects/<oid>')
     def lfs_get_oid(repo, oid):
-        oid_path = lfs(repo).path(oid)
+        oid_path = open_lfs(repo).path(oid)
         if not oid_path.is_file():
             flask.abort(404)
         return flask.jsonify({
@@ -120,7 +120,7 @@ def create_app(config_pyfile=None, config=None):
     @app.route('/<repo>/info/lfs/objects/batch', methods=['POST'])
     def batch(repo):
         req = flask.request.json
-        lfs_repo = lfs(repo)
+        lfs_repo = open_lfs(repo)
 
         if req['operation'] == 'download':
             assert 'basic' in req.get('transfers', ['basic'])
@@ -160,7 +160,7 @@ def create_app(config_pyfile=None, config=None):
 
     @app.route('/<repo>/lfs/<oid>', methods=['PUT'])
     def upload(repo, oid):
-        with lfs(repo).save(oid) as f:
+        with open_lfs(repo).save(oid) as f:
             for chunk in FileWrapper(flask.request.stream):
                 f.write(chunk)
 
@@ -168,7 +168,7 @@ def create_app(config_pyfile=None, config=None):
 
     @app.route('/<repo>/lfs/<oid>')
     def download(repo, oid):
-        oid_path = lfs(repo).path(oid)
+        oid_path = open_lfs(repo).path(oid)
         if not oid_path.is_file():
             flask.abort(404)
         return flask.helpers.send_file(str(oid_path))
