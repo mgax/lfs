@@ -102,10 +102,6 @@ def create_app(config_pyfile=None, config=None):
         resp.status_code = 202
         return resp
 
-    @app.route('/<repo>/info/lfs/objects/batch', methods=['POST'])
-    def batch(repo):
-        flask.abort(404)
-
     @app.route('/<repo>/info/lfs/objects/<oid>')
     def lfs_get_oid(repo, oid):
         oid_path = lfs(repo).path(oid)
@@ -120,6 +116,47 @@ def create_app(config_pyfile=None, config=None):
                 },
             },
         })
+
+    @app.route('/<repo>/info/lfs/objects/batch', methods=['POST'])
+    def batch(repo):
+        req = flask.request.json
+        lfs_repo = lfs(repo)
+
+        if req['operation'] == 'download':
+            assert 'basic' in req.get('transfers', ['basic'])
+
+            def respond(obj):
+                oid = obj['oid']
+                oid_path = lfs_repo.path(oid)
+                url = data_url(repo, oid)
+                if oid_path.is_file():
+                    return {
+                        'oid': oid,
+                        'size': oid_path.stat().st_size,
+                        'actions': {
+                            'download': {'href': url},
+                        },
+                    }
+
+                else:  # TODO test
+                    return {
+                        'oid': oid,
+                        'error': {
+                            'code': 404,
+                            'message': "Object does not exist",
+                        },
+                    }
+
+            headers = {'Content-Type': 'application/vnd.git-lfs+json'}
+            resp = {
+                'transfer': 'basic',
+                'objects': [respond(obj) for obj in req['objects']],
+            }
+
+            return flask.jsonify(resp), 200, headers
+
+        else:
+            flask.abort(400)
 
     @app.route('/<repo>/lfs/<oid>', methods=['PUT'])
     def upload(repo, oid):
