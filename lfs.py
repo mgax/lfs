@@ -155,6 +155,29 @@ def create_app(config_pyfile=None, config=None):
 
             return flask.jsonify(resp), 200, headers
 
+        elif req['operation'] == 'upload':
+            assert 'basic' in req.get('transfers', ['basic'])
+
+            def respond(obj):
+                oid = obj['oid']
+                url = data_url(repo, oid)
+                return {
+                    'oid': oid,
+                    'size': obj['size'],
+                    'actions': {
+                        'upload': {'href': url},
+                        #'verify': {'href': url},
+                    },
+                }
+
+            headers = {'Content-Type': 'application/vnd.git-lfs+json'}
+            resp = {
+                'transfer': 'basic',
+                'objects': [respond(obj) for obj in req['objects']],
+            }
+
+            return flask.jsonify(resp), 200, headers
+
         else:
             flask.abort(400)
 
