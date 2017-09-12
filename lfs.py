@@ -161,14 +161,16 @@ def create_app(config_pyfile=None, config=None):
             def respond(obj):
                 oid = obj['oid']
                 url = data_url(repo, oid)
-                return {
+                rv = {
                     'oid': oid,
                     'size': obj['size'],
-                    'actions': {
-                        'upload': {'href': url},
-                        #'verify': {'href': url},
-                    },
                 }
+                oid = obj['oid']
+                oid_path = lfs_repo.path(oid)
+                url = data_url(repo, oid)
+                if not oid_path.is_file():
+                    rv['actions'] = {'upload': {'href': url}}
+                return rv
 
             headers = {'Content-Type': 'application/vnd.git-lfs+json'}
             resp = {
