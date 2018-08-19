@@ -5,19 +5,23 @@
 #    pip-compile --output-file requirements.txt requirements.in
 #
 argh==0.26.2              # via watchdog
-click==6.6                # via flask, pip-tools
+atomicwrites==1.1.5       # via pytest
+attrs==18.1.0             # via pytest
+click==6.7                # via flask, pip-tools
 first==2.0.1              # via pip-tools
-Flask==0.11.1
+flask==1.0.2
 itsdangerous==0.24        # via flask
-Jinja2==2.8               # via flask
-MarkupSafe==0.23          # via jinja2
+jinja2==2.10              # via flask
+markupsafe==1.0           # via jinja2
+more-itertools==4.3.0     # via pytest
 paste==2.0.3
 pathtools==0.1.2          # via watchdog
-pip-tools==1.7.0
-py==1.4.31                # via pytest
-pytest==2.9.2
-PyYAML==3.11              # via watchdog
-six==1.10.0               # via paste, pip-tools
-waitress==0.9.0
+pip-tools==2.0.2
+pluggy==0.7.1             # via pytest
+py==1.5.4                 # via pytest
+pytest==3.7.2
+pyyaml==3.13              # via watchdog
+six==1.11.0               # via more-itertools, paste, pip-tools, pytest
+waitress==1.1.0
 watchdog==0.8.3
-Werkzeug==0.11.10         # via flask
+werkzeug==0.14.1          # via flask
