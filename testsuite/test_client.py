@@ -55,6 +55,8 @@ def server(tmp, run):
     git_url = 'http://foo:bar@localhost:' + port + '/repo.git'
 
     run(tmp, 'git', 'init', '--bare', 'repo.git')
+    run(tmp / 'repo.git', 'touch', 'git-daemon-export-ok')
+    run(tmp / 'repo.git', 'git', 'config', 'http.receivepack', 'true')
 
     repo = tmp / 'repo.git'
     with (tmp / 'settings.py').open('w') as settings_py:

@@ -51,8 +51,7 @@ def create_git_app(repo):
     @responder
     def git_app(environ, start_response):
         environ['GIT_PROJECT_ROOT'] = repo
-        environ['GIT_HTTP_EXPORT_ALL'] = ''
-        environ['REMOTE_USER'] = 'foo'
+        environ['REMOTE_USER'] = environ.get('HTTP_X_FORWARDED_USER')
         return cgi
 
     return git_app
