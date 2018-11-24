@@ -4,28 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-argh = "==0.26.2"
-atomicwrites = "==1.1.5"
-attrs = "==18.1.0"
-click = "==6.7"
-first = "==2.0.1"
-flask = "==1.0.2"
-itsdangerous = "==0.24"
-more-itertools = "==4.3.0"
-pathtools = "==0.1.2"
-pluggy = "==0.7.1"
-py = "==1.5.4"
-pytest = "==3.7.2"
-six = "==1.11.0"
-waitress = "==1.1.0"
-watchdog = "==0.8.3"
-"Jinja2" = "==2.10"
-MarkupSafe = "==1.0"
-Paste = "==2.0.3"
-PyYAML = "==3.13"
-Werkzeug = "==0.14.1"
-
-[dev-packages]
-
-[requires]
-python_version = "3.6"
+flask = "*"
+pytest = "*"
+waitress = "*"
+Paste = "*"
+PyYAML = "*"
