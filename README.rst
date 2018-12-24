@@ -12,10 +12,12 @@ api.
 
 Setup
 ~~~~~
+Install `pipenv`_
+
+.. _pipenv: https://pipenv.readthedocs.io/#install-pipenv-today
 ::
 
-  virtualenv venv -p python3
-  source venv/bin/activate
+  pipenv --three install
 
   mkdir data
   git init --bare data/repo.git
@@ -28,8 +30,7 @@ Setup
   EOF
 
   cd lfs
-  pip install -r requirements.txt
-  python lfs.py
+  pipenv run python lfs.py
 
 Using as remote
 ~~~~~~~~~~~~~~~
