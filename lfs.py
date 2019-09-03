@@ -220,4 +220,5 @@ if __name__ == '__main__':
         config_pyfile = 'settings.py'
 
     port = int(os.environ.get('PORT') or 5000)
-    runserver('localhost', port, config_pyfile=config_pyfile)
+    host = os.environ.get('LISTEN_HOST', 'localhost')
+    runserver(host, port, config_pyfile=config_pyfile)
